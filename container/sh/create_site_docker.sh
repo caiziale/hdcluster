@@ -753,7 +753,6 @@ function hive_conf() {
 }
 
 function cp_site() {
-    #rm -rf /mnt/*
 
     mkdir -p ${MNT_BK_DIR}
     mv /mnt/hadoop ${MNT_BK_DIR}
