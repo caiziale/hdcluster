@@ -1,0 +1,64 @@
+#!/bin/bash
+
+# HDCluster
+#
+# Copyright 2023 the author.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# @author caizi
+
+source /etc/profile
+
+if [[ "${HJMX}" == "true" ]]; then
+    printf "\033[0;33;40m%s\033[0m...\033[0;35;40m%s\033[0m\n" "Set the 'export \$..._OPTS=...' environment variable to enable JMX parameters" ${DATETIME}
+    export HADOOP_CLIENT_OPTS="$HADOOP_CLIENT_OPTS -javaagent:${PROMETHEUS_NODE_HOME_DIR}/jmx_prometheus_javaagent-0.17.2.jar=9502:${PROMETHEUS_NODE_CONF_DIR}/hadoop_jmx.yaml"
+fi
+
+DATETIME=`date "+%Y-%m-%d-%H:%M:%S"`
+SHELLNAME=`basename $0`
+
+start(){
+    ps -aux|grep hiveserver2|grep -v grep|grep -v ${SHELLNAME}|awk '{ print $2 }'|grep -E '(^[0-9]+$)'
+    if [ $? != 0 ]; then    
+        nohup ${HIVE_HOME}/bin/hive --service hiveserver2 > /dev/null 2>&1 &
+        printf "HiveServer2 starting...\033[0;35;40m%s\033[0m\n" ${DATETIME}
+    fi
+}
+
+stop(){    
+    spid=`ps -aux|grep hiveserver2|grep -v grep|awk '{ print $2 }'`
+    printf "HiveServer2 stopping...\033[0;35;40m%s\033[0m\n" ${DATETIME}
+    kill -9 ${spid}
+}
+
+restart(){
+    stop
+    start
+}
+
+case "$1" in
+    start)
+        start
+    ;;
+    stop)
+        stop
+    ;;
+    restart)
+        restart
+    ;;
+    *)
+        printf "hiveserver2_s <start|stop|restart>\n"
+    ;;
+esac
+

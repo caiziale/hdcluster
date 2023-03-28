@@ -1,0 +1,76 @@
+# /etc/profile: system-wide .profile file for the Bourne shell (sh(1))
+# and Bourne compatible shells (bash(1), ksh(1), ash(1), ...).
+
+if [ "${PS1-}" ]; then
+  if [ "${BASH-}" ] && [ "$BASH" != "/bin/sh" ]; then
+    # The file bash.bashrc already sets the default PS1.
+    # PS1='\h:\w\$ '
+    if [ -f /etc/bash.bashrc ]; then
+      . /etc/bash.bashrc
+    fi
+  else
+    if [ "`id -u`" -eq 0 ]; then
+      PS1='# '
+    else
+      PS1='$ '
+    fi
+  fi
+fi
+
+if [ -d /etc/profile.d ]; then
+  for i in /etc/profile.d/*.sh; do
+    if [ -r $i ]; then
+      . $i
+    fi
+  done
+  unset i
+fi
+
+#--use define
+#--user env
+#export PDSH_RCMD_TYPE=ssh
+
+export HDFS_NAMENODE_USER=root
+export HDFS_DATANODE_USER=root
+export HDFS_SECONDARYNAMENODE_USER=root
+export YARN_RESOURCEMANAGER_USER=root
+export YARN_NODEMANAGER_USER=root
+
+export BASE_DIR="/opt/software"
+
+export HADOOP_HOME=${BASE_DIR}/hadoop-3.3.4
+export HADOOP_CONF_DIR=${HADOOP_HOME}/etc/hadoop
+export HADOOP_MAPRED_HOME=${HADOOP_HOME}
+export HADOOP_DATA_DIR="/data"
+export ZOOKEEPER_HOME=${BASE_DIR}/apache-zookeeper-3.8.0-bin
+export ZOOKEEPER_DATA_DIR="/data/zookeeper"
+export SPARK_HOME=${BASE_DIR}/spark-3.3.1-bin-hadoop3
+export SPARK_CONF_DIR=${SPARK_HOME}/conf
+export HBASE_HOME=${BASE_DIR}/hbase-3.0.0-alpha-3
+export HBASE_CONF_DIR=${HBASE_HOME}/conf
+export IGNITE_HOME=${BASE_DIR}/apache-ignite-2.14.0-bin
+export HIVE_HOME=${BASE_DIR}/apache-hive-3.1.3-bin
+export HIVE_CONF_DIR=${HIVE_HOME}/conf
+export HIVE_AUX_JARS_PATH=${HIVE_HOME}/lib
+export HCATALOG_HOME=${HIVE_HOME}/hcatalog
+export HCAT_HOME=${HIVE_HOME}/hcatalog
+export NODE_EXPORTER_HOME=${BASE_DIR}/node_exporter-1.4.0.linux-amd64
+export LD_LIBRARY_PATH=${HADOOP_HOME}/lib/native
+export JAVA_HOME=${BASE_DIR}/java-se-8u42-ri
+export JRE_HOME=${JAVA_HOME}/jre
+export PIG_HOME=${BASE_DIR}/pig-0.17.0
+export PIG_CONF_DIR=${PIG_HOME}/conf
+export PIG_CLASSPATH=${HADOOP_CONF_DIR}
+export SQOOP_HOME=${BASE_DIR}/sqoop-1.4.7.bin__hadoop-2.6.0
+
+export PROMETHEUS_NODE_HOME_DIR=${BASE_DIR}/prometheus
+export PROMETHEUS_NODE_CONF_DIR=${PROMETHEUS_NODE_HOME_DIR}/conf
+
+export HADOOP_CLASSPATH=$(${HADOOP_HOME}/bin/hadoop classpath)
+export HBASE_CLASSPATH=${HADOOP_CONF_DIR}:${HBASE_HOME}/lib
+export CLASSPATH=.:${JAVA_HOME}/lib:${JRE_HOME}/lib:${HADOOP_CLASSPATH}:${HBASE_CLASSPATH}:${IGNITE_HOME}/libs:${HIVE_AUX_JARS_PATH}
+export PATH=$PATH:/sh:${JAVA_HOME}/bin:${HADOOP_HOME}/bin:${HADOOP_HOME}/sbin:${LD_LIBRARY_PATH}:${SPARK_HOME}/sbin:${SPARK_HOME}/bin:${HADOOP_CONF_DIR}:${SPARK_CONF_DIR}:${ZOOKEEPER_HOME}/bin:${HBASE_HOME}/bin:${IGNITE_HOME}/bin:${HIVE_HOME}/bin:${PIG_HOME}/bin:${SQOOP_HOME}/bin:${HCATALOG_HOME}/sbin
+
+#export HBASE_CLIENT_HOME=${BASE_DIR}/hbase-3.0.0-alpha-3-client
+export HIVE_CLIENT_HOME=${BASE_DIR}/apache-hive-3.1.3-bin
+
