@@ -1,0 +1,109 @@
+# HDCluster
+# @author caizi
+apiVersion: v1
+kind: Service
+metadata:
+  name: resourcemanager-hs
+  labels:
+    app: resourcemanager
+spec:
+  ports:
+  - port: 8030
+    name: rm-scheduler
+  - port: 8031
+    name: rm-tracker
+  - port: 8032
+    name: rm-client 
+  - port: 8033
+    name: rm-admin
+  clusterIP: None
+  selector:
+    app: resourcemanager
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: resourcemanager-http
+  labels:
+    app: resourcemanager
+spec:
+  ports:
+  - port: 8088
+    name: http
+  selector:
+    app: resourcemanager
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: resourcemanager-pdb
+spec:
+  selector:
+    matchLabels:
+      app: resourcemanager
+  maxUnavailable: 1
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: resourcemanager
+spec:
+  selector:
+    matchLabels:
+      app: resourcemanager
+  serviceName: resourcemanager-hs
+  replicas: 1
+  updateStrategy:
+    type: RollingUpdate
+  podManagementPolicy: OrderedReady
+  template:
+    metadata:
+      labels:
+        app: resourcemanager
+    spec:
+      containers:
+      - name: kubernetes-resourcemanager
+        imagePullPolicy: IfNotPresent
+        image: "caiziale/hdcluster:1.0.0.Beta"
+        resources:
+          requests:
+        ports:
+        - containerPort: 8088
+          name: http
+        - containerPort: 8030
+          name: rm-scheduler
+        - containerPort: 8031
+          name: rm-tracker
+        - containerPort: 8032
+          name: rm-client
+        - containerPort: 8033
+          name: rm-admin
+        command:
+        - sh
+        - -c
+        - "startyarn.sh"
+        livenessProbe:
+          tcpSocket:
+            port: 8033
+          initialDelaySeconds: 10
+          failureThreshold: 5
+          periodSeconds: 60
+        startupProbe:
+          tcpSocket:
+            port: 8033
+          initialDelaySeconds: 10
+          timeoutSeconds: 10
+          failureThreshold: 60
+          periodSeconds: 10 
+        securityContext:
+          privileged: true  
+          capabilities:
+            add:
+            - SYS_PTRACE
+        volumeMounts:
+        - name: nfs-site
+          mountPath: /mnt 
+      volumes:
+        - name: nfs-site
+          persistentVolumeClaim:
+            claimName: hp-claim          

@@ -1,0 +1,103 @@
+# HDCluster
+# @author caizi
+apiVersion: v1
+kind: Service
+metadata:
+  name: journal-hs
+  labels:
+    app: journal
+spec:
+  ports:
+  - port: 8485
+    name: server
+  clusterIP: None
+  selector:
+    app: journal
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: journal-http
+  labels:
+    app: journal
+spec:
+  ports:
+  - port: 8480
+    name: http
+  selector:
+    app: journal
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: journal-pdb
+spec:
+  selector:
+    matchLabels:
+      app: journal
+  maxUnavailable: 1
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: journal
+spec:
+  selector:
+    matchLabels:
+      app: journal
+  serviceName: journal-hs
+  replicas: 3
+  updateStrategy:
+    type: RollingUpdate
+  podManagementPolicy: OrderedReady
+  template:
+    metadata:
+      labels:
+        app: journal
+    spec:
+      containers:
+      - name: kubernetes-journal
+        imagePullPolicy: IfNotPresent
+        image: "caiziale/hdcluster:1.0.0.Beta"
+        resources:
+          requests:
+        ports:
+        - containerPort: 8480
+          name: http
+        - containerPort: 8485
+          name: server
+        command:
+        - sh
+        - -c
+        - "startjournal.sh"
+        livenessProbe:
+          tcpSocket:
+            port: 8485
+          initialDelaySeconds: 10
+          failureThreshold: 5
+          periodSeconds: 60
+        startupProbe:
+          tcpSocket:
+            port: 8485
+          initialDelaySeconds: 10
+          failureThreshold: 30
+          periodSeconds: 10
+        volumeMounts:
+        - name: nfs-site
+          mountPath: /mnt 
+        - name: journalpvc
+          mountPath: /data
+      volumes:
+        - name: nfs-site
+          persistentVolumeClaim:
+            claimName: hp-claim          
+  volumeClaimTemplates:
+  - metadata:
+      name: journalpvc
+      annotations:
+        volume.beta.kubernetes.io/storage-class: nfs-client
+    spec:
+      accessModes: [ "ReadWriteMany" ]
+      resources:
+        requests:
+          storage: 100Mi            

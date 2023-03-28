@@ -1,0 +1,95 @@
+# HDCluster
+# @author caizi
+apiVersion: v1
+kind: Service
+metadata:
+  name: hive-hs
+  labels:
+    app: hive
+spec:
+  ports:
+  - port: 9083
+    name: metastore
+  - port: 10000
+    name: server2
+  clusterIP: None
+  selector:
+    app: hive
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hive-http
+  labels:
+    app: hive
+spec:
+  ports:
+  - port: 10002
+    name: http
+  selector:
+    app: hive    
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: hive-pdb
+spec:
+  selector:
+    matchLabels:
+      app: hive
+  maxUnavailable: 1
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: hive
+spec:
+  selector:
+    matchLabels:
+      app: hive
+  serviceName: hive-hs
+  replicas: 2
+  updateStrategy:
+    type: RollingUpdate
+  podManagementPolicy: OrderedReady
+  template:
+    metadata:
+      labels:
+        app: hive
+    spec:
+      containers:
+      - name: kubernetes-hive
+        imagePullPolicy: IfNotPresent
+        image: "caiziale/hdcluster:1.0.0.Beta"
+        resources:
+          requests:
+        ports:
+        - containerPort: 9083
+          name: metastore
+        - containerPort: 10000
+          name: server2
+        - containerPort: 10002
+          name: http 
+        command:
+        - sh
+        - -c
+        - "starthive.sh"
+        livenessProbe:
+          tcpSocket:
+            port: 10000
+          initialDelaySeconds: 10
+          failureThreshold: 5
+          periodSeconds: 60
+        startupProbe:
+          tcpSocket:
+            port: 10000
+          initialDelaySeconds: 10
+          failureThreshold: 90
+          periodSeconds: 10
+        volumeMounts:
+          - name: nfs-site
+            mountPath: "/mnt" 
+      volumes:
+        - name: nfs-site
+          persistentVolumeClaim:
+            claimName: hp-claim          

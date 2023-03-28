@@ -1,0 +1,91 @@
+# HDCluster
+# @author caizi
+apiVersion: v1
+kind: Service
+metadata:
+  name: hbasemaster-hs
+  labels:
+    app: hbasemaster
+spec:
+  ports:
+  - port: 16000
+    name: server
+  clusterIP: None
+  selector:
+    app: hbasemaster
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hbasemaster-http
+  labels:
+    app: hbasemaster
+spec:
+  ports:
+  - port: 16010
+    name: http
+  selector:
+    app: hbasemaster    
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: hbasemaster-pdb
+spec:
+  selector:
+    matchLabels:
+      app: hbasemaster
+  maxUnavailable: 1
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: hbasemaster
+spec:
+  selector:
+    matchLabels:
+      app: hbasemaster
+  serviceName: hbasemaster-hs
+  replicas: 1
+  updateStrategy:
+    type: RollingUpdate
+  podManagementPolicy: OrderedReady
+  template:
+    metadata:
+      labels:
+        app: hbasemaster
+    spec:
+      containers:
+      - name: kubernetes-hbasemaster
+        imagePullPolicy: IfNotPresent
+        image: "caiziale/hdcluster:1.0.0.Beta"
+        resources:
+          requests:
+        ports:
+        - containerPort: 16000
+          name: server
+        - containerPort: 16010
+          name: http          
+        command:
+        - sh
+        - -c
+        - "starthbasemaster.sh"
+        livenessProbe:
+          tcpSocket:
+            port: 16000
+          initialDelaySeconds: 10
+          failureThreshold: 5
+          periodSeconds: 60
+        startupProbe:
+          tcpSocket:
+            port: 16000
+          initialDelaySeconds: 10
+          failureThreshold: 60
+          periodSeconds: 10 
+        volumeMounts:
+          - name: nfs-site
+            mountPath: "/mnt" 
+      volumes:
+        - name: nfs-site
+          persistentVolumeClaim:
+            claimName: hp-claim          

@@ -1,0 +1,91 @@
+# HDCluster
+# @author caizi
+apiVersion: v1
+kind: Service
+metadata:
+  name: jobhistory-hs
+  labels:
+    app: jobhistory
+spec:
+  ports:
+  - port: 10020
+    name: server
+  clusterIP: None
+  selector:
+    app: jobhistory
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jobhistory-http
+  labels:
+    app: jobhistory
+spec:
+  ports:
+  - port: 19888
+    name: http
+  selector:
+    app: jobhistory
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: jobhistory-pdb
+spec:
+  selector:
+    matchLabels:
+      app: jobhistory
+  maxUnavailable: 1
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: jobhistory
+spec:
+  selector:
+    matchLabels:
+      app: jobhistory
+  serviceName: jobhistory-hs
+  replicas: 1
+  updateStrategy:
+    type: RollingUpdate
+  podManagementPolicy: OrderedReady
+  template:
+    metadata:
+      labels:
+        app: jobhistory
+    spec:
+      containers:
+      - name: kubernetes-jobhistory
+        imagePullPolicy: IfNotPresent
+        image: "caiziale/hdcluster:1.0.0.Beta"
+        resources:
+          requests:
+        ports:
+        - containerPort: 19888
+          name: http
+        - containerPort: 10020
+          name: server
+        command:
+        - sh
+        - -c
+        - "startjobhistory.sh"
+        livenessProbe:
+          tcpSocket:
+            port: 10020
+          initialDelaySeconds: 10
+          failureThreshold: 5
+          periodSeconds: 60
+        startupProbe:
+          tcpSocket:
+            port: 10020
+          initialDelaySeconds: 10
+          failureThreshold: 30
+          periodSeconds: 10
+        volumeMounts:
+        - name: nfs-site
+          mountPath: /mnt
+      volumes:
+        - name: nfs-site
+          persistentVolumeClaim:
+            claimName: hp-claim          

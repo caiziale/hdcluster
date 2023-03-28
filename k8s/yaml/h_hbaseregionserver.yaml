@@ -1,0 +1,91 @@
+# HDCluster
+# @author caizi
+apiVersion: v1
+kind: Service
+metadata:
+  name: hbaseregionserver-hs
+  labels:
+    app: hbaseregionserver
+spec:
+  ports:
+  - port: 16020
+    name: server
+  clusterIP: None
+  selector:
+    app: hbaseregionserver
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hbaseregionserver-http
+  labels:
+    app: hbaseregionserver
+spec:
+  ports:
+  - port: 16030
+    name: http
+  selector:
+    app: hbaseregionserver 
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: hbaseregionserver-pdb
+spec:
+  selector:
+    matchLabels:
+      app: hbaseregionserver
+  maxUnavailable: 1
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: hbaseregionserver
+spec:
+  selector:
+    matchLabels:
+      app: hbaseregionserver
+  serviceName: hbaseregionserver-hs
+  replicas: 2
+  updateStrategy:
+    type: RollingUpdate
+  podManagementPolicy: OrderedReady
+  template:
+    metadata:
+      labels:
+        app: hbaseregionserver
+    spec:
+      containers:
+      - name: kubernetes-hbaseregionserver
+        imagePullPolicy: IfNotPresent
+        image: "caiziale/hdcluster:1.0.0.Beta"
+        resources:
+          requests:
+        ports:
+        - containerPort: 16020
+          name: server
+        - containerPort: 16030
+          name: http                
+        command:
+        - sh
+        - -c
+        - "starthbaseregionserver.sh"
+        livenessProbe:
+          tcpSocket:
+            port: 16020
+          initialDelaySeconds: 10
+          failureThreshold: 5
+          periodSeconds: 60
+        startupProbe:
+          tcpSocket:
+            port: 16020
+          initialDelaySeconds: 10
+          failureThreshold: 60
+          periodSeconds: 10
+        volumeMounts:
+          - name: nfs-site
+            mountPath: "/mnt"
+      volumes:
+        - name: nfs-site
+          persistentVolumeClaim:
+            claimName: hp-claim          

@@ -1,0 +1,118 @@
+# HDCluster
+# @author caizi
+apiVersion: v1
+kind: Service
+metadata:
+  name: datanode-hs
+  labels:
+    app: datanode
+spec:
+  ports:
+  - port: 9866
+    name: dn-server
+  - port: 9867
+    name: dn-ipc
+  - port: 8040
+    name: nm-ipc
+  clusterIP: None
+  selector:
+    app: datanode
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: datanode-http
+  labels:
+    app: datanode
+spec:
+  ports:
+  - port: 9864
+    name: dn-http
+  - port: 8042
+    name: nm-http
+  selector:
+    app: datanode
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: datanode-pdb
+spec:
+  selector:
+    matchLabels:
+      app: datanode
+  maxUnavailable: 1
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: datanode
+spec:
+  selector:
+    matchLabels:
+      app: datanode
+  serviceName: datanode-hs
+  replicas: 2
+  updateStrategy:
+    type: RollingUpdate
+  podManagementPolicy: OrderedReady
+  template:
+    metadata:
+      labels:
+        app: datanode
+    spec:
+      containers:
+      - name: kubernetes-datanode
+        imagePullPolicy: IfNotPresent
+        image: "caiziale/hdcluster:1.0.0.Beta"
+        resources:
+          requests:
+        ports:
+        - containerPort: 9866
+          name: dn-server
+        - containerPort: 9867
+          name: dn-ipc
+        - containerPort: 8040
+          name: nm-ipc
+        - containerPort: 9864
+          name: dn-http
+        - containerPort: 8042
+          name: nm-http
+        command:
+        - sh
+        - -c
+        - "startdatanode.sh"
+        livenessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - "datanode-ready 9866 8040"
+          initialDelaySeconds: 60
+          timeoutSeconds: 10
+          failureThreshold: 5
+          periodSeconds: 300
+        securityContext:
+          privileged: true
+          capabilities:
+            add:
+            - SYS_PTRACE          
+        volumeMounts:
+        - name: nfs-site
+          mountPath: /mnt
+        - name: dnpvc
+          mountPath: /data
+      volumes:
+        - name: nfs-site
+          persistentVolumeClaim:
+            claimName: hp-claim          
+  volumeClaimTemplates:
+  - metadata:
+      name: dnpvc
+      annotations:
+        volume.beta.kubernetes.io/storage-class: nfs-client
+    spec:
+      accessModes: [ "ReadWriteMany" ]
+      resources:
+        requests:
+          storage: 5120Mi            

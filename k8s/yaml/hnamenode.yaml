@@ -1,0 +1,111 @@
+# HDCluster
+# @author caizi
+apiVersion: v1
+kind: Service
+metadata:
+  name: namenode-hs
+  labels:
+    app: namenode
+spec:
+  ports:
+  - port: 8020
+    name: server
+  - port: 8019
+    name: zkfc    
+  clusterIP: None
+  selector:
+    app: namenode
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: namenode-http
+  labels:
+    app: namenode
+spec:
+  ports:
+  - port: 9870
+    name: http
+  selector:
+    app: namenode
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: namenode-pdb
+spec:
+  selector:
+    matchLabels:
+      app: namenode
+  maxUnavailable: 1
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: namenode
+spec:
+  selector:
+    matchLabels:
+      app: namenode
+  serviceName: namenode-hs
+  replicas: 1
+  updateStrategy:
+    type: RollingUpdate
+  podManagementPolicy: OrderedReady
+  template:
+    metadata:
+      labels:
+        app: namenode
+    spec:
+      containers:
+      - name: kubernetes-namenode
+        imagePullPolicy: IfNotPresent
+        image: "caiziale/hdcluster:1.0.0.Beta"
+        resources:
+          requests:
+        ports:
+        - containerPort: 9870
+          name: http
+        - containerPort: 8020
+          name: server
+        - containerPort: 8019
+          name: zkfc   
+        command:
+        - sh
+        - -c
+        - "startnamenode.sh"
+        livenessProbe:
+          tcpSocket:
+            port: 8020
+          #initialDelaySeconds: 10
+          timeoutSeconds: 10
+          failureThreshold: 6
+          periodSeconds: 60
+        startupProbe:
+          tcpSocket:
+            port: 8019
+          initialDelaySeconds: 10
+          timeoutSeconds: 10
+          failureThreshold: 120
+          periodSeconds: 10 
+        securityContext:
+          privileged: true      
+        volumeMounts:
+        - name: nfs-site
+          mountPath: /mnt 
+        - name: nnpvc
+          mountPath: /data
+      volumes:
+        - name: nfs-site
+          persistentVolumeClaim:
+            claimName: hp-claim
+  volumeClaimTemplates:
+  - metadata:
+      name: nnpvc
+      annotations:
+        volume.beta.kubernetes.io/storage-class: nfs-client
+    spec:
+      accessModes: [ "ReadWriteMany" ]
+      resources:
+        requests:
+          storage: 100Mi            
