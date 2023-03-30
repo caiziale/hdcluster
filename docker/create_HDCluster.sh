@@ -103,6 +103,10 @@ mkdir -p ${DOCKER_TMP_DIR3}/dn2
 echo "****** Starts to create container cluster. ******"
 echo ""
 
+#--create hadoop network
+docker network create hadoop
+docker network ls
+
 #--site
 echo "------ Starts site container..."
 docker run -itd -v ${DOCKER_TMP_DIR2}/site0:/mnt --net hadoop -h site-0 --name site-0 caiziale/hdcluster:1.0.0.Beta /bin/bash -c "create_site_docker.sh --servers=3 --mysqlpassword=${MYSQL_PASSWORD}"
