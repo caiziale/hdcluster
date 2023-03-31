@@ -16,6 +16,7 @@
 
 ##### **Docker版本**
 
+* docker Server Version: `20.10.18`
 * 创建HDCluster集群系统:
 
 ```
@@ -92,6 +93,7 @@ $ docker run -it --rm --net hadoop mysql:8.0.31 mysql -hmysql-cs -uroot -p
 
 ##### Kubernetes版本
 
+* k8s Server Version `1.25.2` (docker Server Version `20.10.21`)
 * 存储类
 
 [Kubernetes 不包含内部 NFS 驱动,您需要使用外部驱动为 NFS 创建 StorageClass.](https://kubernetes.io/zh-cn/docs/concepts/storage/storage-classes/#nfs "NFS 创建 StorageClass")
