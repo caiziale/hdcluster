@@ -34,7 +34,7 @@ $ ./create_HDCluster.sh
 
 This script creates the following containers:
 
-| Container Name                                              | description                                                                 | Default container number |
+| Container Name                                              | Description                                                                 | Default container number |
 | ----------------------------------------------------------- | --------------------------------------------------------------------------- | ------------------------ |
 | site -0                                                     | A data volume container that holds configuration files for multiple systems | 1                        |
 | mysql-cs                                                    | Apache Hive metadata                                                       | 1                        |
@@ -158,7 +158,7 @@ $ ./create_HDCluster_k8s.sh     #Execute on the control plane node (master node)
 
 This script creates the following containers:
 
-| Container Name                                        | description                                                                 | Default container number | pv size | pv number |
+| Container Name                                        | Description                                                                 | Default container number | pv size | pv number |
 | ----------------------------------------------------- | --------------------------------------------------------------------------- | ------------------------ | ------- | --------- |
 | site-0                                                | A data volume container that holds configuration files for multiple systems | 1                        | 500Mi   | 1         |
 | mysql-0                                               | Apache Hive metadata                                                       | 1                        | 5Gi     | 1         |

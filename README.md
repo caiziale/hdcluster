@@ -4,6 +4,8 @@
 
 ## **HDCluster此镜像为测试版本,仅用于学习与测试**
 
+## [English README](https://github.com/caiziale/hdcluster/blob/main/README_en.md)
+
 # 如何使用此镜像
 
 [下载HDCluster相关脚本](https://github.com/caiziale/hdcluster)
