@@ -92,11 +92,6 @@ spec:
           timeoutSeconds: 10
           failureThreshold: 5
           periodSeconds: 300
-        securityContext:
-          privileged: true
-          capabilities:
-            add:
-            - SYS_PTRACE          
         volumeMounts:
         - name: nfs-site
           mountPath: /mnt
